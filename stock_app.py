@@ -4,7 +4,7 @@ import dash_html_components as html
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 
@@ -14,9 +14,7 @@ server = app.server
 
 scaler=MinMaxScaler(feature_range=(0,1))
 
-
-
-df_nse = pd.read_csv("./NSE-TATA.csv")
+df_nse = pd.read_csv("./stock_data.csv")
 
 df_nse["Date"]=pd.to_datetime(df_nse.Date,format="%Y-%m-%d")
 df_nse.index=df_nse['Date']
@@ -50,7 +48,7 @@ x_train,y_train=np.array(x_train),np.array(y_train)
 
 x_train=np.reshape(x_train,(x_train.shape[0],x_train.shape[1],1))
 
-model=load_model("saved_model.h5")
+model=load_model("./model_train.h5")
 
 inputs=new_data[len(new_data)-len(valid)-60:].values
 inputs=inputs.reshape(-1,1)
@@ -80,52 +78,52 @@ app.layout = html.Div([
     dcc.Tabs(id="tabs", children=[
        
         dcc.Tab(label='NSE-TATAGLOBAL Stock Data',children=[
-			html.Div([
-				html.H2("Actual closing price",style={"textAlign": "center"}),
-				dcc.Graph(
-					id="Actual Data",
-					figure={
-						"data":[
-							go.Scatter(
-								x=train.index,
-								y=valid["Close"],
-								mode='markers'
-							)
+            html.Div([
+                html.H2("Actual closing price",style={"textAlign": "center"}),
+                dcc.Graph(
+                    id="Actual Data",
+                    figure={
+                        "data":[
+                            go.Scatter(
+                                x=train.index,
+                                y=valid["Close"],
+                                mode='markers'
+                            )
 
-						],
-						"layout":go.Layout(
-							title='scatter plot',
-							xaxis={'title':'Date'},
-							yaxis={'title':'Closing Rate'}
-						)
-					}
+                        ],
+                        "layout":go.Layout(
+                            title='scatter plot',
+                            xaxis={'title':'Date'},
+                            yaxis={'title':'Closing Rate'}
+                        )
+                    }
 
-				),
-				html.H2("LSTM Predicted closing price",style={"textAlign": "center"}),
-				dcc.Graph(
-					id="Predicted Data",
-					figure={
-						"data":[
-							go.Scatter(
-								x=valid.index,
-								y=valid["Predictions"],
-								mode='markers'
-							)
+                ),
+                html.H2("LSTM Predicted closing price",style={"textAlign": "center"}),
+                dcc.Graph(
+                    id="Predicted Data",
+                    figure={
+                        "data":[
+                            go.Scatter(
+                                x=valid.index,
+                                y=valid["Predictions"],
+                                mode='markers'
+                            )
 
-						],
-						"layout":go.Layout(
-							title='scatter plot',
-							xaxis={'title':'Date'},
-							yaxis={'title':'Closing Rate'}
-						)
-					}
+                        ],
+                        "layout":go.Layout(
+                            title='scatter plot',
+                            xaxis={'title':'Date'},
+                            yaxis={'title':'Closing Rate'}
+                        )
+                    }
 
-				)				
-			])        		
+                )                
+            ])                
 
 
         ]),
-        dcc.Tab(label='Facebook Stock Data', children=[
+        dcc.Tab(label='Stocks Data', children=[
             html.Div([
                 html.H1("Stocks High vs Lows", 
                         style={'textAlign': 'center'}),
@@ -156,11 +154,6 @@ app.layout = html.Div([
 
     ])
 ])
-
-
-
-
-
 
 
 @app.callback(Output('highlow', 'figure'),
@@ -231,6 +224,5 @@ def update_graph(selected_dropdown_value):
     return figure
 
 
-
 if __name__=='__main__':
-	app.run_server(debug=True)
+    app.run_server(debug=True)

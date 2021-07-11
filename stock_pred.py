@@ -10,7 +10,7 @@ rcParams['figure.figsize']=20,10
 from sklearn.preprocessing import MinMaxScaler
 scaler=MinMaxScaler(feature_range=(0,1))
 
-df=pd.read_csv("NSE-TATA.csv")
+df=pd.read_csv("./stock_data.csv")
 df.head()
 
 df["Date"]=pd.to_datetime(df.Date,format="%Y-%m-%d")
@@ -76,7 +76,7 @@ X_test=np.reshape(X_test,(X_test.shape[0],X_test.shape[1],1))
 closing_price=model.predict(X_test)
 closing_price=scaler.inverse_transform(closing_price)
 
-lstm_model.save("saved_lstm_model.h5")
+lstm_model.save("./model_train.h5")
 
 train_data=new_dataset[:987]
 valid_data=new_dataset[987:]
