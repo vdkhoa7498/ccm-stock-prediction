@@ -34,9 +34,16 @@ df.index=df['Date']
 plt.figure(figsize=(16,8))
 plt.plot(df[["Close"]],label='Close Price history')
 
+data=df.sort_index(ascending=True,axis=0)
+new_dataset=pd.DataFrame(index=range(0,len(df)),columns=['Date','Close'])
+
+for i in range(0,len(data)):
+    new_dataset["Date"][i]=data['Date'][i]
+    new_dataset["Close"][i]=data["Close"][i]
+
 percent_train = 80
 percent_valid = 100 - percent_train
-cout_percent_train = int(len(df)/100*percent_train)
+cout_percent_train = int(len(new_dataset)/100*percent_train)
 
 scaler=MinMaxScaler(feature_range=(0,1))
 final_dataset=new_dataset.values
