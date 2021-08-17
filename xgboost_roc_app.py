@@ -27,8 +27,9 @@ df_nse = pd.read_csv("./stock_data.csv")
 
 df_nse["Date"]=pd.to_datetime(df_nse.Date,format="%Y-%m-%d")
 df_nse.index=df_nse['Date']
-data=df_nse.sort_index(ascending=True,axis=0)
 
+
+data=df_nse.sort_index(ascending=True,axis=0)
 new_data=pd.DataFrame(index=range(0,len(df_nse)),columns=['Date','Close'])
 
 for i in range(0,len(data)):
@@ -39,7 +40,7 @@ new_data.index=new_data.Date
 new_data.drop("Date",axis=1,inplace=True)
 
 
-df_for_xgboost = data
+df_for_xgboost = df_nse
 df_for_xgboost.head(5)
 df_for_xgboost = df_for_xgboost[["Close"]].copy()
 df_for_xgboost["Target"] = df_for_xgboost.Close.shift(-1)
@@ -118,7 +119,7 @@ app.layout = html.Div([
             ])                
 
 
-        ])
+        ]),
 
 
     ])
