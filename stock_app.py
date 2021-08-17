@@ -111,7 +111,7 @@ app.layout = html.Div([
                     }
 
                 ),
-                html.H2("Predicted closing price",style={"textAlign": "center"}),
+                html.H2("RNN Predicted closing price",style={"textAlign": "center"}),
                 dcc.Graph(
                     id="Predicted Data RNN",
                     figure={
