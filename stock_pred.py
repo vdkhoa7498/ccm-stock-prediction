@@ -36,7 +36,7 @@ plt.plot(df[["Close"]],label='Close Price history')
 
 percent_train = 80
 percent_valid = 100 - percent_train
-cout_percent_train = int(len(new_dataset)/100*percent_train)
+cout_percent_train = int(len(df)/100*percent_train)
 
 scaler=MinMaxScaler(feature_range=(0,1))
 final_dataset=new_dataset.values
