@@ -7,12 +7,21 @@ from dash.dependencies import Input, Output
 from tensorflow.keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
+from IPython.core.debugger import set_trace
 
+# %load_ext nb_black
+
+import os
+import time
+from xgboost import XGBRegressor
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+model = XGBRegressor()
+model.load_model("xgboost_model.txt")
 
 app = dash.Dash()
 server = app.server
 
-scaler=MinMaxScaler(feature_range=(0,1))
 
 df_nse = pd.read_csv("./stock_data.csv")
 
@@ -30,45 +39,35 @@ for i in range(0,len(data)):
 new_data.index=new_data.Date
 new_data.drop("Date",axis=1,inplace=True)
 
-dataset=new_data.values
 
-train=dataset[0:987,:]
-valid=dataset[987:,:]
+df_for_xgboost = df_nse
+df_for_xgboost.head(5)
+df_for_xgboost = df_for_xgboost[["Close"]].copy()
+df_for_xgboost["Target"] = df_for_xgboost.Close.shift(-1)
+df_for_xgboost.dropna(inplace=True)
+df_for_xgboost.head(5)
 
-scaler=MinMaxScaler(feature_range=(0,1))
-scaled_data=scaler.fit_transform(dataset)
+def train_test_split(data, percent):
+    data = data.values
+    n = int(len(data) * (1 - percent))
+    return data[:n], data[n:]
 
-x_train,y_train=[],[]
+train, test = train_test_split(df_for_xgboost, 0.1)
 
-for i in range(60,len(train)):
-    x_train.append(scaled_data[i-60:i,0])
-    y_train.append(scaled_data[i,0])
-    
-x_train,y_train=np.array(x_train),np.array(y_train)
+predictions = []
+for i in range(len(test)):
+    inputVal = test[i, 0]
 
-x_train=np.reshape(x_train,(x_train.shape[0],x_train.shape[1],1))
+    val = np.array(inputVal).reshape(1, -1)
+    pre = model.predict(val)
+    predictions.append(pre[0])
 
-model=load_model("./model_train.h5")
+def train_test_split_plotdata(data, percent):
+    n = int(len(data) * (1 - percent))
+    return data[n:]
 
-inputs=new_data[len(new_data)-len(valid)-60:].values
-inputs=inputs.reshape(-1,1)
-inputs=scaler.transform(inputs)
-
-X_test=[]
-for i in range(60,inputs.shape[0]):
-    X_test.append(inputs[i-60:i,0])
-X_test=np.array(X_test)
-
-X_test=np.reshape(X_test,(X_test.shape[0],X_test.shape[1],1))
-closing_price=model.predict(X_test)
-closing_price=scaler.inverse_transform(closing_price)
-train=new_data[:987]
-valid=new_data[987:]
-valid['Predictions']=closing_price
-
-
-
-
+valid = train_test_split_plotdata(new_data,0.1)
+valid["Predictions"] = predictions
 app.layout = html.Div([
    
     html.H1("Stock Price Analysis Dashboard", style={"textAlign": "center"}),
