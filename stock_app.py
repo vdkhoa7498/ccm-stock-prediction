@@ -7,7 +7,17 @@ from dash.dependencies import Input, Output
 from tensorflow.keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
+from IPython.core.debugger import set_trace
 from datetime import datetime,date,timedelta
+
+import os
+import time
+from xgboost import XGBRegressor
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+
+XGBmodel = XGBRegressor()
+XGBmodel.load_model("xgboost_model.txt")
 
 app = dash.Dash()
 server = app.server
@@ -18,8 +28,6 @@ df_nse = pd.read_csv("./stock_data.csv")
 df_nse = df_nse.sort_values(by='Date')
 df_nse["Date"]=pd.to_datetime(df_nse.Date,format="%Y-%m-%d")
 df_nse.index=df_nse['Date']
-
-
 
 data=df_nse.sort_index(ascending=True,axis=0)
 new_data=pd.DataFrame(index=range(0,len(df_nse)),columns=['Date','Close'])
@@ -35,6 +43,36 @@ percent_train = 80
 percent_valid = 100 - percent_train
 cout_percent_train = int(len(new_data)/100*percent_train)
 cout_percent_valid = len(new_data)-cout_percent_train
+
+
+df_for_xgboost = data
+df_for_xgboost.head(5)
+df_for_xgboost = df_for_xgboost[["Close"]].copy()
+df_for_xgboost["Target"] = df_for_xgboost.Close.shift(-1)
+df_for_xgboost.dropna(inplace=True)
+df_for_xgboost.head(5)
+
+def train_test_split(data, percent):
+    data = data.values
+    n = int(len(data) * (1 - percent))
+    return data[:n], data[n:]
+
+train, test = train_test_split(df_for_xgboost, 0.1)
+
+predictions = []
+for i in range(len(test)):
+    inputVal = test[i, 0]
+
+    val = np.array(inputVal).reshape(1, -1)
+    pre = XGBmodel.predict(val)
+    predictions.append(pre[0])
+
+def train_test_split_plotdata(data, percent):
+    n = int(len(data) * (1 - percent))
+    return data[n:]
+
+valid = train_test_split_plotdata(new_data,0.1)
+valid["Predictions"] = predictions
 
 dataset=new_data.values
 
@@ -68,16 +106,16 @@ for i in range(60,inputs.shape[0]):
 X_test=np.array(X_test)
 
 X_test=np.reshape(X_test,(X_test.shape[0],X_test.shape[1],1))
-closing_price=model_RNN.predict(X_test)
-closing_price=scaler.inverse_transform(closing_price)
-closing_price_=model_LSTM.predict(X_test)
-closing_price_=scaler.inverse_transform(closing_price_)
+RNN_closing_price=model_RNN.predict(X_test)
+RNN_closing_price=scaler.inverse_transform(RNN_closing_price)
+LSTM_closing_price=model_LSTM.predict(X_test)
+LSTM_closing_price=scaler.inverse_transform(LSTM_closing_price)
 
 train=new_data[:cout_percent_train]
 valid=new_data[cout_percent_train:]
-valid['Predictions']=closing_price
+valid['Predictions']=RNN_closing_price
 valid_=new_data[cout_percent_train:]
-valid_['Predictions']=closing_price_
+valid_['Predictions']=LSTM_closing_price
 
 
 
@@ -107,6 +145,26 @@ app.layout = html.Div([
                             title='scatter plot',
                             xaxis={'title':'Date'},
                             yaxis={'title':'Closing Rate'}
+                        )
+                    }
+
+                ),
+                html.H2("XGBoost Predicting Close price",style={"textAlign": "center"}),
+                dcc.Graph(
+                    id="Predicted Data",
+                    figure={
+                        "data":[
+                            go.Scatter(
+                                x=valid.index,
+                                y=valid["Predictions"],
+                                mode='markers'
+                            )
+
+                        ],
+                        "layout":go.Layout(
+                            title='scatter plot',
+                            xaxis={'title':'Date'},
+                            yaxis={'title':'Predict Closing Rate'}
                         )
                     }
 
