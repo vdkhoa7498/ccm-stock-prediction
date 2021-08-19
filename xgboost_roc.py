@@ -62,7 +62,7 @@ def train_test_split(data, percent):
     n = int(len(data) * (1 - percent))
     return data[:n], data[n:]
 
-train, test = train_test_split(datatrain, 0.1)
+train, test = train_test_split(datatrain, 0.05)
 
 predictions = []
 for i in range(len(test)):
@@ -76,9 +76,9 @@ def train_test_split_plotdata(data, percent):
     n = int(len(data) * (1 - percent))
     return data[n:]
 
-valid = train_test_split_plotdata(df_for_xgboost,0.1)
+valid = train_test_split_plotdata(df_for_xgboost,0.05)
 valid["Predictions"] = predictions
-target_values = train_test_split_plotdata(datatrain, 0.1)
+target_values = train_test_split_plotdata(datatrain, 0.05)
 valid["Target"] = target_values.ROC_3_Target
 
 app.layout = html.Div([
