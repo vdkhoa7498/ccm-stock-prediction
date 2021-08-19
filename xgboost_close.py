@@ -16,19 +16,17 @@ import time
 from xgboost import XGBRegressor
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
-xg_roc_model = XGBRegressor()
-xg_roc_model.load_model("roc_xgboost_model.txt")
+model = XGBRegressor()
+model.load_model("xgboost_close_model.txt")
 
 app = dash.Dash()
 server = app.server
 
 
-df_nse = pd.read_csv("./stock_data.csv")
+df_nse = pd.read_csv("./btc.csv")
 
 df_nse["Date"]=pd.to_datetime(df_nse.Date,format="%Y-%m-%d")
 df_nse.index=df_nse['Date']
-
-
 data=df_nse.sort_index(ascending=True,axis=0)
 
 new_data=pd.DataFrame(index=range(0,len(df_nse)),columns=['Date','Close'])
@@ -41,46 +39,34 @@ new_data.index=new_data.Date
 new_data.drop("Date",axis=1,inplace=True)
 
 
-df_for_xgboost = df_nse
+df_for_xgboost = data
 df_for_xgboost.head(5)
 df_for_xgboost = df_for_xgboost[["Close"]].copy()
+df_for_xgboost["Target"] = df_for_xgboost.Close.shift(-1)
+df_for_xgboost.dropna(inplace=True)
 df_for_xgboost.head(5)
-def rate_of_change(df, n):
-    M = df["Close"].diff(n - 1)
-    N = df["Close"].shift(n - 1)
-    ROC = pd.Series(M / N, name="ROC_" + str(n))
-    df = df.join(ROC)
-    return df
 
-
-df_for_xgboost = rate_of_change(df_for_xgboost, 3)
-datatrain = df_for_xgboost[["ROC_3"]].copy()
-datatrain.head(5)
-datatrain["ROC_3_Target"] = datatrain.ROC_3.shift(-1)
 def train_test_split(data, percent):
     data = data.values
     n = int(len(data) * (1 - percent))
     return data[:n], data[n:]
 
-train, test = train_test_split(datatrain, 0.1)
+train, test = train_test_split(df_for_xgboost, 0.1)
 
 predictions = []
 for i in range(len(test)):
     inputVal = test[i, 0]
 
     val = np.array(inputVal).reshape(1, -1)
-    pre = xg_roc_model.predict(val)
+    pre = model.predict(val)
     predictions.append(pre[0])
 
 def train_test_split_plotdata(data, percent):
     n = int(len(data) * (1 - percent))
     return data[n:]
 
-valid = train_test_split_plotdata(df_for_xgboost,0.1)
+valid = train_test_split_plotdata(new_data,0.1)
 valid["Predictions"] = predictions
-target_values = train_test_split_plotdata(datatrain, 0.1)
-valid["Target"] = target_values.ROC_3_Target
-
 app.layout = html.Div([
    
     html.H1("Stock Price Analysis Dashboard", style={"textAlign": "center"}),
@@ -109,28 +95,9 @@ app.layout = html.Div([
                     }
 
                 ),
-                dcc.Graph(
-                    id="Actual ROC Data",
-                    figure={
-                        "data":[
-                            go.Scatter(
-                                x=valid.index,
-                                y=valid["Target"],
-                                mode='markers'
-                            )
-
-                        ],
-                        "layout":go.Layout(
-                            title='scatter plot',
-                            xaxis={'title':'Date'},
-                            yaxis={'title':'Virtual Target Price  Rate of Changes'}
-                        )
-                    }
-
-                ),
                 html.H2("Predicting Close price",style={"textAlign": "center"}),
                 dcc.Graph(
-                    id="Predicted ROC Data",
+                    id="Predicted Data",
                     figure={
                         "data":[
                             go.Scatter(
@@ -143,19 +110,18 @@ app.layout = html.Div([
                         "layout":go.Layout(
                             title='scatter plot',
                             xaxis={'title':'Date'},
-                            yaxis={'title':'Predict Price  Rate of Changes'}
+                            yaxis={'title':'Predict Closing Rate'}
                         )
                     }
 
-                )                 
-            ])    ,            
-             
-
-        ]),
+                )                
+            ])                
 
 
-    ]),
+        ])
 
+
+    ])
 ])
 
 
